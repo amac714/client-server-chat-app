@@ -4,17 +4,17 @@
 
 1) compile chatclient.c
 
-		`gcc chatclient.c -o chatclient`
+		gcc chatclient.c -o chatclient
 
 2) Make sure chatserve has permission to execute
 
-		`chmod +x chatserve`
+		chmod +x chatserve
 
 3) Run `./chatserve x` with x as the port number
 
 4) Run chatclient
 
-		`./chatclient hostname port#`
+		./chatclient hostname port#
 
 		Hostname is hostname where chatserve is running, for example flip1.
 
