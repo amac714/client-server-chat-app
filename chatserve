@@ -1,0 +1,128 @@
+i#!/usr/bin/env python
+
+#Name: Alan macabuhay
+#Date: 10/16/18
+#Description: A simple python client-server program
+#References: (1)http://docs.python.org/2/howto/sockets.html
+#			 (2)http://docs.python.org/3/library/socket.html#example
+#            (3)https://stackoverflow.com/questions/27651772/check-length-of-user-input
+#			 (4)https://stackoverflow.com/questions/1112343/how-do-i-capture-sigint-in-python
+
+import signal
+import sys
+from socket import *
+
+
+#function to handle SIGINT. (4)
+def signal_handler(sig, frame):
+	print "Server exiting with Ctrl+C"
+	sys.exit(0)
+
+#captures SIGINT. (4)
+signal.signal(signal.SIGINT, signal_handler)
+
+#function that handles the chatting
+def chat(clientSocket, clientName, serverName):
+	
+	#continue until quitting. (2)
+	while 1:
+		#receive msg from client
+		recvData = clientSocket.recv(501)[0:-1]
+	
+		if recvData == "":
+			print "Ending connection with {}".format(clientName)
+			print "waiting for new connection..."
+			break	
+
+		#print received msg
+		print "{}> {}".format(clientName, recvData)
+
+		sendData = ""
+
+		#get msg to send to client and check length. (3)	
+		while 1:
+			sendData = raw_input("{}> ".format(serverName))
+
+			if len(sendData) > 500:
+				print "Message must not exceed 500 characters"
+
+			#prompts user if they press enter without typing a msg.
+			#can still send a blank msg if len(sendData) > 0
+			elif len(sendData) == 0:
+				print "Please enter a message."
+
+			else:
+				break
+
+		if sendData == "\quit":
+			print "Ending connection with {}".format(clientName)
+			print "waiting for new connection..."
+			break
+
+		#send msg to client
+		clientSocket.send(sendData)
+
+#function that handles exchanging of handle between server and client
+def handshake(clientSocket, serverName):
+	name = clientSocket.recv(1024)
+	clientSocket.send(serverName)
+
+	return name
+
+#function that creates socket, binds it, and listens for connections
+def socketHelper(portNum):
+	#create TCP socket. (1)
+	sock = socket(AF_INET, SOCK_STREAM)
+
+	#bind and listen for up to 5 connections. (1)
+	sock.bind(('', int(portNum)))
+	sock.listen(5)
+
+	return sock
+
+#function to get server handle from user
+def getServerHandle():
+
+	server = ""
+	while 1:
+		server = raw_input("Enter a handle for the server (max 10 characters): ")
+		
+		if len(server) <= 10 and len(server) > 0:
+			break
+
+	return server
+
+#main function
+if __name__ == "__main__":
+	#check arguments are correct
+	if len(sys.argv) != 2:
+		print "Error: Missing argument(s)"
+		exit(1)
+
+	#get port number 
+	portNum = sys.argv[1]
+
+	#create socket
+	serverSocket = socketHelper(portNum)
+
+	#get server's handle name
+	serverName = getServerHandle()
+
+	print "{} now waiting for messages...".format(serverName)
+
+	#keep talking with client
+	while 1:
+		#accept connection to client socket. (1)
+		(clientSocket, address) = serverSocket.accept()
+
+		#exchange handle names between client and server
+		clientName = handshake(clientSocket, serverName)
+
+		print "Now connected with {} on {}".format(clientName, address)
+	
+		#start chat
+		chat(clientSocket, clientName, serverName)
+
+		#close socket
+		clientSocket.close()
+
